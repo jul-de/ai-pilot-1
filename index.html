@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review Detection Test</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --bg: #f8f7f4;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --text-secondary: #6b6b6b;
+    --border: #e2e0dc;
+    --accent: #2c5f2d;
+    --accent-light: #e8f0e8;
+    --human: #2c5f2d;
+    --ai: #8b4513;
+    --correct: #2c5f2d;
+    --incorrect: #c23b22;
+  }
+  
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+  
+  /* INTRO SCREEN */
+  .intro { text-align: center; padding-top: 60px; }
+  .intro h1 { font-size: 28px; font-weight: 600; margin-bottom: 16px; letter-spacing: -0.5px; }
+  .intro p { color: var(--text-secondary); font-size: 16px; margin-bottom: 12px; max-width: 480px; margin-left: auto; margin-right: auto; }
+  .intro .note { font-size: 14px; color: var(--text-secondary); margin-top: 24px; padding: 16px; background: var(--accent-light); border-radius: 8px; }
+  
+  .name-input {
+    margin: 32px auto;
+    max-width: 320px;
+  }
+  .name-input input {
+    width: 100%;
+    padding: 12px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .name-input input:focus { border-color: var(--accent); }
+  .name-input label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; text-align: left; }
+  
+  .btn {
+    display: inline-block;
+    padding: 14px 36px;
+    background: var(--text);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 16px;
+  }
+  .btn:hover { background: #333; transform: translateY(-1px); }
+  .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+  
+  /* TRIAL SCREEN */
+  .trial { display: none; }
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-bottom: 32px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.4s ease;
+    border-radius: 2px;
+  }
+  .trial-counter {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+  
+  .review-card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 24px;
+    margin-bottom: 28px;
+    line-height: 1.7;
+    font-size: 15.5px;
+  }
+  
+  .choice-buttons {
+    display: flex;
+    gap: 12px;
+  }
+  .choice-btn {
+    flex: 1;
+    padding: 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .choice-btn:hover { border-color: var(--text); background: #fafafa; }
+  .choice-btn.selected-human { border-color: var(--human); background: var(--accent-light); color: var(--human); }
+  .choice-btn.selected-ai { border-color: var(--ai); background: #fdf0e6; color: var(--ai); }
+  
+  /* FEEDBACK AFTER EACH TRIAL */
+  .trial-feedback {
+    display: none;
+    text-align: center;
+    padding: 16px;
+    border-radius: 10px;
+    margin-top: 16px;
+    font-weight: 500;
+    font-size: 15px;
+  }
+  .trial-feedback.correct { background: #e8f5e9; color: var(--correct); }
+  .trial-feedback.incorrect { background: #fce8e4; color: var(--incorrect); }
+  
+  .next-btn {
+    display: none;
+    margin-top: 20px;
+    width: 100%;
+    padding: 14px;
+    background: var(--text);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .next-btn:hover { background: #333; }
+  
+  /* RESULTS SCREEN */
+  .results { display: none; text-align: center; padding-top: 40px; }
+  .results h2 { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+  .results .score { font-size: 56px; font-weight: 600; color: var(--accent); margin: 24px 0; font-family: 'DM Mono', monospace; }
+  .results .subtitle { color: var(--text-secondary); font-size: 15px; margin-bottom: 32px; }
+  
+  .results-breakdown {
+    text-align: left;
+    margin-top: 32px;
+  }
+  .results-breakdown h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-bottom: 12px; }
+  
+  .result-row {
+    display: flex;
+    align-items: flex-start;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .result-icon.correct { background: #e8f5e9; color: var(--correct); }
+  .result-icon.incorrect { background: #fce8e4; color: var(--incorrect); }
+  .result-text { font-size: 14px; color: var(--text-secondary); flex: 1; line-height: 1.5; }
+  .result-label { font-family: 'DM Mono', monospace; font-size: 12px; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; }
+  .result-label.human { background: var(--accent-light); color: var(--human); }
+  .result-label.ai { background: #fdf0e6; color: var(--ai); }
+  
+  .confidence-note {
+    margin-top: 32px;
+    padding: 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  
+  <!-- INTRO -->
+  <div class="intro" id="intro">
+    <h1>Can you spot AI writing?</h1>
+    <p>You'll read 20 product reviews. Some were written by real Amazon customers. Some were generated by AI. Your job: figure out which is which.</p>
+    <div class="note">This takes about 5 minutes. There are no tricks. Just read each review and go with your gut.</div>
+    <div class="name-input">
+      <label for="participantName">Your first name (just so I can tell responses apart)</label>
+      <input type="text" id="participantName" placeholder="e.g. Sarah">
+    </div>
+    <button class="btn" onclick="startTest()" id="startBtn">Start</button>
+  </div>
+  
+  <!-- TRIAL -->
+  <div class="trial" id="trial">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="trial-counter" id="trialCounter"></div>
+    <div class="review-card" id="reviewText"></div>
+    <div class="choice-buttons" id="choiceButtons">
+      <button class="choice-btn" onclick="selectChoice('human')">Human-written</button>
+      <button class="choice-btn" onclick="selectChoice('ai_generated')">AI-generated</button>
+    </div>
+    <div class="trial-feedback" id="trialFeedback"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextTrial()">Next review</button>
+  </div>
+  
+  <!-- RESULTS -->
+  <div class="results" id="results">
+    <h2>Your results</h2>
+    <div class="score" id="scoreDisplay"></div>
+    <div class="subtitle" id="scoreSubtitle"></div>
+    <div class="results-breakdown" id="resultsBreakdown">
+      <h3>Review by review</h3>
+      <div id="resultsList"></div>
+    </div>
+    <div class="confidence-note">
+      Thanks for doing this! Your responses help me calibrate the difficulty of stimuli for my dissertation experiment. No data is shared anywhere.
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// REVIEW DATA (shuffled)
+// ============================================================
+const REVIEWS = [
+  {id:"A030",text:"I bought this because I was half asleep and convinced myself I needed a better garlic press. Mine works fine but the video made it look so satisfying. Three weeks later the inside mechanism is already kind of gunky and hard to clean, which is way worse than I expected \u2014 garlic gets jammed in the little grooves and I can\u2019t get it out even with the brush thing it comes with. The handle does feel nicer than my old one, I\u2019ll give it that. My husband tried it once and just went back to using the knife anyway. It\u2019s been raining here all week so I\u2019ve been cooking more than usual which is probably why I even noticed how annoying it is.",truth:"ai_generated",tier:"hard"},
+  {id:"H007",text:"My filters arrived very quickly (2 days). However, even though the box states the same filter # compatible with my Samsung #DA29-00020B, they do not fit. This filter would not go all the way in, therefore I could not lock it in place. When I compared it with the filter I removed I could see the top of this filter where the opening is, is way different. I will be returning these.",truth:"human",tier:"n/a"},
+  {id:"A019",text:"I\u2019ve been using this over-the-door organizer for about two months now and it\u2019s made a huge difference in our entryway. The pockets are sturdy, it holds everything from keys to sunglasses without sagging, and the hooks grip the door firmly without scratching the paint. Assembly took less than five minutes. My only minor complaint is that the top hook is a little tricky to adjust once it\u2019s in place, so take your time getting it right the first time. Overall, really happy with this purchase and would definitely recommend it to anyone looking to add some quick, no-drill storage to their home.",truth:"ai_generated",tier:"easy"},
+  {id:"H012",text:"So I\u2019ll say right off that these do what they are supposed to do and allow me to make capsules from my own beans which I love but it is a hassle and most of the time it\u2019s just easier to pop in a capsule and go. I do sometimes take the time when I want the \u201cperfect\u201d cup but for me the ease of just popping in a ready-made capsule takes the cake. I also have found a couple of types of capsules that I like so if you are having trouble pinning down a good flavor, this might make more sense for you.",truth:"human",tier:"n/a"},
+  {id:"A003",text:"The suction on this handheld vacuum is actually pretty decent for pet hair on the couch, picked up way more than I expected. Battery life though, maybe 8 minutes before it starts dying out on me. Bought a second one to keep charged while the other one sits useless.",truth:"ai_generated",tier:"medium"},
+  {id:"H025",text:'This arrived "used like new", but it wasn\u2019t. The mechanism on the bottom of the basket to cut off the flow of coffee if the carafe is removed before brewing is finished was missing regardless of it being shown in the picture. Nowhere in the description does it list this is a used part. I bought this because I broke the mechanism on my original. Returning item. I was able to buy a complete replacement at Cuisinart directly for less - including free shipping.',truth:"human",tier:"n/a"},
+  {id:"A006",text:"Got this little bluetooth speaker for my bathroom and it actually sounds way better than I expected for the size. Pairs up fast, no fumbling around with it. The bass is a little much sometimes, like it kind of rattles on certain songs if you have it turned up past halfway. But for podcasts and stuff in the shower it\u2019s been fine. Battery seems to last a few days without charging which I wasn\u2019t expecting.",truth:"ai_generated",tier:"medium"},
+  {id:"H021",text:"My husband owns a small home based business. He does have to ship supplies to his customers on occasion. This tape is much better than the cheap stuff I ordered last time. It\u2019s noticeably thicker and feels stronger. It adheres well. I don\u2019t feel the need to reinforce with multiple layers of packing tape. I definitely recommend this tape!",truth:"human",tier:"n/a"},
+  {id:"A014",text:"I bought this to read on a flight to Phoenix. Got maybe 40 pages in and realized the whole premise the back cover describes \u2014 the detective uncovering corruption in a small fishing town \u2014 barely shows up. It\u2019s mostly flashbacks about his childhood and a dog he had. I kept waiting for the actual story to start. By the time we landed I\u2019d given up and switched to the in-flight magazine. The back cover is doing a lot of heavy lifting that the book itself never bothers with.",truth:"ai_generated",tier:"medium"},
+  {id:"H042",text:"The magnet works great! The suction cup is like all suction cups around the globe\u2026some work for some situations & some don\u2019t work at all or are not a good solution for washers where they use non-metal for the door\u2026rough texture surfaces - check your inside washer door before purchasing.",truth:"human",tier:"n/a"},
+  {id:"A028",text:"I picked up this Bluetooth speaker about two months ago and my experience has been a bit of a mixed bag. The sound quality is genuinely impressive for the price \u2014 rich bass and clear highs that surprised me. Battery life is also solid, easily lasting 8+ hours. However, the pairing process is frustratingly inconsistent. Sometimes it connects instantly, other times I\u2019m restarting both devices just to get it working. The build feels a little cheap too, mostly plastic with a slightly flimsy charging port cover. Customer support was helpful when I reached out, which I appreciated. Overall, it does the job and sounds great when it cooperates, but the connectivity issues keep me from giving it a full five stars.",truth:"ai_generated",tier:"easy"},
+  {id:"H020",text:"These page protectors are lightweight. They are not the super heavy thick ones, but they\u2019re not the flimsy, cheap ones either. I use page protectors to protect the pages in my recipe binder. Thick ones cause the binder to fill up too quickly, so I like to use ones like this. There are 200 page protectors in this set. These are good for everyday use.",truth:"human",tier:"n/a"},
+  {id:"A018",text:"got this bluetooth speaker about 3 weeks ago and its been sitting on my kitchen counter ever since, my wife even commented on the sound which she never does with any of my gadgets. connects fast, stays connected, battery lasts way longer than i expected. the bass gets a little muddy when you push it past like 80% volume but i mostly have it at half anyway so its not really a daily problem. the buttons on top are a little small and i hit the wrong one sometimes but my hands are big so that might just be a me thing.",truth:"ai_generated",tier:"medium"},
+  {id:"H028",text:"If you open them up slightly they can be used on your hands. I mainly got them for my tablet and phone screens, but apparently there is something in them that smears. I thought they were just alcohol and water. They\u2019re OK, but nothing to write home about for my purposes. However, I\u2019m sure they will work fine for someone who must clean off a wound or prepare a spot for an injection.",truth:"human",tier:"n/a"},
+  {id:"A016",text:"Picked up this mandoline slicer after seeing another reviewer\u2019s photos of the julienne cuts \u2014 looked clean and even. And yeah, it does slice well, I\u2019ll give it that. The suction cups on the bottom actually hold, which I was not expecting. But the hand guard is basically useless. Too small, awkward to grip, and I ended up just not using it which is probably not smart. Almost sent it back after I nicked my finger the second week. Still have it. May update this once I\u2019ve used it longer.",truth:"ai_generated",tier:"medium"},
+  {id:"H017",text:"Works as advertised, but they easily slide, so you need some weight on it, especially if you\u2019re going to be storing things in the side pockets. When we first bought our washer & dryer, I wanted something like this to prevent scratches at the top. I never got around to it, that was 12 yrs ago. LOL! I always use old bath towels. Now we finally have something specifically made for this. 5-Stars!",truth:"human",tier:"n/a"},
+  {id:"A029",text:'Bought this after probably three weeks of reading spec sheets and reddit threads because our old monitor finally gave out and my son does homework on it every night. Paid $189 which felt like the ceiling of what I wanted to spend. Took maybe 40 minutes to set up because the stand instructions were basically just a drawing with no labels. Fine. But the bigger issue \u2014 there\u2019s a faint buzzing when the screen is on a white background. Not loud, just constant. Like a refrigerator hum but coming from your desk. My daughter noticed it before I did. Contacted support and they said it was "within normal operating range." Cool. It\u2019s been two months and I still notice it every single time.',truth:"ai_generated",tier:"hard"},
+  {id:"A008",text:"Bought this for my dark spots and it literally did nothing. I used the whole bottle over like 6 weeks and my skin looked exactly the same as when I started. Smells kind of medicinal too which I was not expecting from something that costs this much. My sister tried it and said the same thing. The pump stopped working halfway through which meant I was basically tilting the whole bottle every time just to get product out.",truth:"ai_generated",tier:"medium"},
+  {id:"H016",text:"I\u2019ve used sonic toothbrushes before. I like the pink color of this. It comes with a travel case and extra brush heads. There are several different speeds/settings that you can use. As far as I can tell, there isn\u2019t a timer on it which would be nice. The bristles are pretty firm. I\u2019m guessing maybe they are a medium. It does a good job of leaving my teeth clean.",truth:"human",tier:"n/a"},
+  {id:"H045",text:"These are great... #2 standard pencils... they are pre-sharpened... however, they are just nubs... so you might need a bit more of a point... I purchased for a game we need lots of pencils for. They are yellow, with pink erasers on top.  I never hesitate to update my reviews should new info seem useful.",truth:"human",tier:"n/a"},
+];
+
+// ============================================================
+// STATE
+// ============================================================
+let currentTrial = 0;
+let responses = [];
+let participantName = '';
+let startTime = null;
+
+// ============================================================
+// FUNCTIONS
+// ============================================================
+function startTest() {
+  participantName = document.getElementById('participantName').value.trim() || 'Anonymous';
+  startTime = new Date().toISOString();
+  document.getElementById('intro').style.display = 'none';
+  document.getElementById('trial').style.display = 'block';
+  showTrial();
+}
+
+function showTrial() {
+  const review = REVIEWS[currentTrial];
+  document.getElementById('trialCounter').textContent = `Review ${currentTrial + 1} of ${REVIEWS.length}`;
+  document.getElementById('progressFill').style.width = `${((currentTrial) / REVIEWS.length) * 100}%`;
+  document.getElementById('reviewText').textContent = review.text;
+  
+  // Reset buttons
+  document.querySelectorAll('.choice-btn').forEach(btn => {
+    btn.className = 'choice-btn';
+    btn.disabled = false;
+  });
+  document.getElementById('trialFeedback').style.display = 'none';
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('choiceButtons').style.pointerEvents = 'auto';
+}
+
+function selectChoice(choice) {
+  const review = REVIEWS[currentTrial];
+  const correct = choice === review.truth;
+  
+  // Record response
+  responses.push({
+    trial: currentTrial + 1,
+    review_id: review.id,
+    ground_truth: review.truth,
+    tier: review.tier,
+    response: choice,
+    correct: correct,
+    timestamp: new Date().toISOString()
+  });
+  
+  // Visual feedback
+  document.getElementById('choiceButtons').style.pointerEvents = 'none';
+  const buttons = document.querySelectorAll('.choice-btn');
+  if (choice === 'human') {
+    buttons[0].classList.add('selected-human');
+  } else {
+    buttons[1].classList.add('selected-ai');
+  }
+  
+  const feedback = document.getElementById('trialFeedback');
+  feedback.style.display = 'block';
+  feedback.className = `trial-feedback ${correct ? 'correct' : 'incorrect'}`;
+  const truthLabel = review.truth === 'human' ? 'human-written' : 'AI-generated';
+  feedback.textContent = correct ? `Correct! This was ${truthLabel}.` : `Not quite \u2014 this was actually ${truthLabel}.`;
+  
+  document.getElementById('nextBtn').style.display = 'block';
+  document.getElementById('nextBtn').textContent = currentTrial < REVIEWS.length - 1 ? 'Next review' : 'See results';
+}
+
+function nextTrial() {
+  currentTrial++;
+  if (currentTrial < REVIEWS.length) {
+    showTrial();
+  } else {
+    showResults();
+  }
+}
+
+function showResults() {
+  document.getElementById('trial').style.display = 'none';
+  document.getElementById('results').style.display = 'block';
+  
+  const correct = responses.filter(r => r.correct).length;
+  const total = responses.length;
+  const pct = Math.round((correct / total) * 100);
+  
+  document.getElementById('scoreDisplay').textContent = `${correct}/${total}`;
+  document.getElementById('scoreSubtitle').textContent = `${pct}% accuracy`;
+  
+  // Per-review breakdown
+  const list = document.getElementById('resultsList');
+  list.innerHTML = '';
+  responses.forEach((r, i) => {
+    const row = document.createElement('div');
+    row.className = 'result-row';
+    const truthLabel = r.ground_truth === 'human' ? 'Human' : 'AI';
+    const truthClass = r.ground_truth === 'human' ? 'human' : 'ai';
+    row.innerHTML = `
+      <div class="result-icon ${r.correct ? 'correct' : 'incorrect'}">${r.correct ? '\u2713' : '\u2717'}</div>
+      <div class="result-text">${REVIEWS[i].text.substring(0, 80)}...</div>
+      <span class="result-label ${truthClass}">${truthLabel}</span>
+    `;
+    list.appendChild(row);
+  });
+  
+  // Tier accuracy
+  const tierResults = {};
+  responses.filter(r => r.tier !== 'n/a').forEach(r => {
+    if (!tierResults[r.tier]) tierResults[r.tier] = { correct: 0, total: 0 };
+    tierResults[r.tier].total++;
+    if (r.correct) tierResults[r.tier].correct++;
+  });
+  
+  // Log full results to console for data collection
+  const fullResults = {
+    participant: participantName,
+    start_time: startTime,
+    end_time: new Date().toISOString(),
+    overall_accuracy: pct,
+    correct_count: correct,
+    total_count: total,
+    ai_accuracy: responses.filter(r => r.ground_truth === 'ai_generated' && r.correct).length + '/' + responses.filter(r => r.ground_truth === 'ai_generated').length,
+    human_accuracy: responses.filter(r => r.ground_truth === 'human' && r.correct).length + '/' + responses.filter(r => r.ground_truth === 'human').length,
+    tier_accuracy: tierResults,
+    responses: responses
+  };
+  
+  console.log('=== FULL RESULTS (copy this) ===');
+  console.log(JSON.stringify(fullResults, null, 2));
+  
+  // Also display a copyable data block
+  const note = document.querySelector('.confidence-note');
+  note.innerHTML += `
+    <div style="margin-top: 16px; padding: 12px; background: var(--bg); border-radius: 6px; font-family: 'DM Mono', monospace; font-size: 11px; word-break: break-all; max-height: 120px; overflow-y: auto; cursor: pointer;" onclick="navigator.clipboard.writeText(this.textContent).then(() => this.style.borderColor = 'var(--accent)')">
+      ${JSON.stringify(fullResults)}
+    </div>
+    <div style="font-size: 12px; margin-top: 8px; color: var(--text-secondary);">Click the box above to copy results to clipboard, then send to Julia.</div>
+  `;
+}
+</script>
+</body>
+</html>
